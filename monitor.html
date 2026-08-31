@@ -11,16 +11,16 @@ body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif
 .header h1 { font-size:20px; font-weight:700; }
 .header .sub { font-size:12px; color:#888; margin-top:4px; }
 .card { background:#fff; margin:12px; border-radius:12px; padding:14px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
-.label { font-size:13px; color:#666; margin-bottom:6px; }
+.label { font-size:13px; color:#666; margin:8px 0 6px; }
 .row { display:flex; gap:8px; align-items:center; }
-input[type=text] { flex:1; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:15px; outline:none; }
-input[type=text]:focus { border-color:#4A90D9; }
-.btn { border:none; border-radius:8px; padding:10px 16px; font-size:15px; cursor:pointer; color:#fff; }
-.btn-primary { background:#4A90D9; }
+input[type=text], input[type=password] { flex:1; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:15px; outline:none; background:#fff; color:#222; }
+input[type=text]:focus, input[type=password]:focus { border-color:#4A90D9; }
+.btn { border:none; border-radius:8px; padding:12px 16px; font-size:15px; cursor:pointer; color:#fff; }
+.btn-primary { background:#4A90D9; width:100%; }
 .btn-danger { background:#e74c3c; }
 .btn-warn { background:#f39c12; }
 .btn:disabled { opacity:.5; }
-.status-bar { display:flex; align-items:center; gap:8px; font-size:14px; margin-top:8px; }
+.status-bar { display:flex; align-items:center; gap:8px; font-size:14px; margin-top:12px; }
 .dot { width:10px; height:10px; border-radius:50%; background:#bbb; }
 .dot.on { background:#2ecc71; }
 .dot.off { background:#e74c3c; }
@@ -33,42 +33,64 @@ input[type=text]:focus { border-color:#4A90D9; }
 .btn-group { display:flex; gap:8px; }
 .btn-group .btn { flex:1; padding:14px; font-size:16px; }
 .footer { text-align:center; font-size:11px; color:#aaa; margin-top:10px; }
+.tip { font-size:12px; color:#999; margin-top:6px; text-align:center; }
+.error-text { color:#e74c3c; font-size:13px; text-align:center; margin-top:8px; min-height:18px; }
+.hidden { display:none; }
+/* 登录框布局：输入框为满宽八分之一并居中，按钮十分之一居中 */
+#loginView .label { text-align:center; }
+#loginView input[type=text], #loginView input[type=password] {
+  display:block; width:12.5%; margin:0 auto; text-align:left;
+}
+#loginView #loginBtn {
+  display:block; width:10%; margin:10px auto 0; padding:8px 6px;
+  font-size:14px; white-space:nowrap;
+}
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1>SCUM远程监控</h1>
-  <div class="sub">实时查看运行日志 · 远程控制</div>
+  <div class="sub">账户登录 · 实时日志 · 远程控制</div>
 </div>
 
-<!-- 连接配置 -->
-<div class="card">
-  <div class="label">用户ID（脚本运行窗口显示的ID）</div>
-  <div class="row">
-    <input type="text" id="clientId" placeholder="如：小雨_4821">
-    <button class="btn btn-primary" id="connectBtn">连接</button>
-  </div>
-  <div class="status-bar">
-    <span class="dot" id="statusDot"></span>
-    <span id="statusText">未连接</span>
-  </div>
-</div>
-
-<!-- 日志 -->
-<div class="card">
-  <div class="label">运行日志</div>
-  <div class="log-box" id="logBox">
-    <div class="log-line log-info"><span class="t">--</span>等待连接，请输入用户ID后点击"连接"</div>
+<!-- ===== 登录视图 ===== -->
+<div id="loginView">
+  <div class="card">
+    <div class="label">用户ID</div>
+    <input type="text" id="loginId" placeholder="输入已注册的账户ID">
+    <div class="label">密码</div>
+    <input type="password" id="loginPwd" placeholder="输入账户密码">
+    <div class="error-text" id="loginError"></div>
+    <button class="btn btn-primary" id="loginBtn" style="margin-top:10px;">登录</button>
+    <div class="tip">使用脚本"账户"页面注册的ID和密码登录</div>
   </div>
 </div>
 
-<!-- 控制 -->
-<div class="card">
-  <div class="label">远程控制</div>
-  <div class="btn-group">
-    <button class="btn btn-danger" id="stopBtn" disabled>停止脚本</button>
-    <button class="btn btn-warn" id="exitBtn" disabled>退出游戏</button>
+<!-- ===== 监控视图（登录后）===== -->
+<div id="monitorView" class="hidden">
+  <div class="card">
+    <div class="status-bar">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">连接中...</span>
+      <span style="flex:1"></span>
+      <button class="btn btn-danger" id="logoutBtn" style="padding:6px 10px; font-size:12px;">退出登录</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label">运行日志</div>
+    <div class="log-box" id="logBox">
+      <div class="log-line log-info"><span class="t">--</span>等待日志推送...</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label">远程控制</div>
+    <div class="btn-group">
+      <button class="btn btn-danger" id="stopBtn">停止脚本</button>
+      <button class="btn btn-warn" id="exitBtn">退出游戏</button>
+    </div>
   </div>
 </div>
 
@@ -78,14 +100,27 @@ input[type=text]:focus { border-color:#4A90D9; }
 <script>
 (function(){
   var client = null;
-  var connected = false;
-  var clientId = '';
+  var loggedIn = false;
+  var currentId = '';
+  var currentTag = '';
+  var LOG_TOPIC = '';
+  var CMD_TOPIC = '';
+  var ACCOUNT_TOPIC = '';
 
+  var loginView = document.getElementById('loginView');
+  var monitorView = document.getElementById('monitorView');
+  var loginError = document.getElementById('loginError');
+  var loginBtn = document.getElementById('loginBtn');
   var statusDot = document.getElementById('statusDot');
   var statusText = document.getElementById('statusText');
   var logBox = document.getElementById('logBox');
-  var stopBtn = document.getElementById('stopBtn');
-  var exitBtn = document.getElementById('exitBtn');
+
+  // ===== 工具函数 =====
+  async function sha256(text) {
+    var data = new TextEncoder().encode(text);
+    var hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+  }
 
   function setStatus(text, state){
     statusText.textContent = text;
@@ -99,7 +134,6 @@ input[type=text]:focus { border-color:#4A90D9; }
     div.innerHTML = '<span class="t">' + t + '</span>' + escapeHtml(msg);
     logBox.appendChild(div);
     logBox.scrollTop = logBox.scrollHeight;
-    // 限制日志条数
     while(logBox.children.length > 200){
       logBox.removeChild(logBox.firstChild);
     }
@@ -109,86 +143,149 @@ input[type=text]:focus { border-color:#4A90D9; }
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  function publishCmd(cmd){
-    if(!connected || !clientId) return;
-    var topic = 'scum/' + clientId + '/cmd';
-    var payload = JSON.stringify({cmd: cmd});
-    client.publish(topic, payload, {qos:0});
-    addLog('info', '已发送指令: ' + cmd + ' (→' + topic + ')');
-  }
-
-  document.getElementById('connectBtn').onclick = function(){
-    if(connected){
-      // 断开
-      try{ client.end(true); }catch(e){}
-      client = null; connected = false;
-      setStatus('未连接','');
-      stopBtn.disabled = true; exitBtn.disabled = true;
-      document.getElementById('connectBtn').textContent = '连接';
-      addLog('info','已断开连接');
+  // ===== 登录 =====
+  document.getElementById('loginBtn').onclick = function(){
+    var id = document.getElementById('loginId').value.trim();
+    var pwd = document.getElementById('loginPwd').value;
+    if(!id || !pwd){
+      loginError.textContent = '请输入用户ID和密码';
       return;
     }
-    clientId = document.getElementById('clientId').value.trim();
-    if(!clientId){
-      alert('请输入用户ID');
-      return;
-    }
-    var broker = 'wss://broker.emqx.io:8084/mqtt'; // WebSocket加密端口
-    setStatus('连接中...','');
-    try{
-      client = mqtt.connect(broker, {
-        clientId: 'web_' + Math.random().toString(36).substr(2,8),
-        clean: true,
-        connectTimeout: 10000,
-        reconnectPeriod: 4000
-      });
+    loginBtn.disabled = true;
+    loginError.textContent = '正在登录验证，请稍候...';
+    loginError.style.color = '#f39c12';
+    doLogin(id, pwd);
+  };
 
-      client.on('connect', function(){
-        connected = true;
-        setStatus('已连接 · ' + clientId, 'on');
-        stopBtn.disabled = false; exitBtn.disabled = false;
-        document.getElementById('connectBtn').textContent = '断开';
-        // 订阅日志主题
-        var logTopic = 'scum/' + clientId + '/log';
-        client.subscribe(logTopic, {qos:0});
-        var statusTopic = 'scum/' + clientId + '/status';
-        client.subscribe(statusTopic, {qos:0});
-        addLog('info','已连接，订阅主题: ' + logTopic);
-      });
+  function doLogin(id, pwd){
+    // 先断开旧连接
+    if(client){ try{ client.end(true); }catch(e){} client = null; }
+    currentId = id;
+    ACCOUNT_TOPIC = 'scum/accounts/' + id + '/registration';
 
-      client.on('message', function(topic, message){
+    client = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
+      clientId: 'web_' + Math.random().toString(36).substr(2,8),
+      clean: true,
+      connectTimeout: 10000,
+      reconnectPeriod: 4000
+    });
+
+    var verified = false;
+    var noAccountTimer = null;
+
+    client.on('connect', function(){
+      // 订阅账户注册表，读取账号信息
+      client.subscribe(ACCOUNT_TOPIC, {qos:0});
+      // 连接成功但未收到账号保留消息，6秒后判定"未注册"
+      if(!verified){
+        noAccountTimer = setTimeout(function(){
+          if(!verified){
+            loginError.textContent = '该账号未注册';
+            loginError.style.color = '#e74c3c';
+            loginBtn.disabled = false;
+            try{ client.end(true); }catch(e){}
+          }
+        }, 6000);
+      }
+    });
+
+    client.on('message', function(topic, message){
+      if(topic === ACCOUNT_TOPIC){
+        if(noAccountTimer) clearTimeout(noAccountTimer);
+        var payload = message.toString();
+        if(!payload){
+          // 无保留消息 = 账号未注册
+          if(!verified){
+            loginError.textContent = '该账号未注册';
+            loginError.style.color = '#e74c3c';
+            loginBtn.disabled = false;
+            try{ client.end(true); }catch(e){}
+          }
+          return;
+        }
+        // 解析并验证
+        sha256(pwd).then(function(pwHash){
+          var data = null;
+          try{ data = JSON.parse(payload); }catch(e){}
+          if(!data || data.pw_hash !== pwHash){
+            if(!verified){
+              loginError.textContent = '密码错误';
+              loginError.style.color = '#e74c3c';
+              loginBtn.disabled = false;
+              try{ client.end(true); }catch(e){}
+            }
+            return;
+          }
+          // 验证通过
+          verified = true;
+          loginSuccess(id, pwd);
+        });
+      } else if(topic === LOG_TOPIC){
+        // 日志消息
         var text = message.toString();
         try{
-          var data = JSON.parse(text);
-          var level = (data.level||'info').toLowerCase();
+          var d = JSON.parse(text);
+          var level = (d.level||'info').toLowerCase();
           if(!['info','warn','error'].includes(level)) level='info';
-          addLog(level, data.msg||text, data.time||'');
+          addLog(level, d.msg||text, d.time||'');
         }catch(e){
           addLog('info', text);
         }
-      });
+      }
+    });
 
-      client.on('close', function(){
-        if(connected){
-          connected = false;
-          setStatus('已断开，重连中...','off');
-          stopBtn.disabled = true; exitBtn.disabled = true;
-          addLog('warn','连接已断开，正在自动重连');
-        }
-      });
+    client.on('close', function(){
+      if(loggedIn){
+        setStatus('连接断开，重连中...', 'off');
+      }
+    });
 
-      client.on('error', function(err){
-        addLog('error','连接错误: ' + err.message);
-        setStatus('连接失败','off');
-      });
-    }catch(e){
-      addLog('error','创建连接失败: ' + e.message);
-      setStatus('连接失败','off');
-    }
+    client.on('error', function(){
+      if(!verified && !loggedIn){
+        loginError.textContent = '连接失败，请检查网络';
+        loginError.style.color = '#e74c3c';
+        loginBtn.disabled = false;
+      }
+    });
+  }
+
+  function loginSuccess(id, pwd){
+    // 计算tag并订阅日志主题
+    sha256(pwd).then(function(pwHash){
+      currentTag = pwHash.substring(0, 10);
+      LOG_TOPIC = 'scum/' + id + '/' + currentTag + '/log';
+      CMD_TOPIC = 'scum/' + id + '/' + currentTag + '/cmd';
+      client.subscribe(LOG_TOPIC, {qos:0});
+      loggedIn = true;
+      // 切换到监控视图
+      loginView.classList.add('hidden');
+      monitorView.classList.remove('hidden');
+      setStatus('已登录 · ' + id, 'on');
+      addLog('info', '登录成功，开始接收日志');
+      // 显示账户信息
+    });
+  }
+
+  // ===== 控制指令 =====
+  function publishCmd(cmd){
+    if(!loggedIn || !client) return;
+    client.publish(CMD_TOPIC, JSON.stringify({cmd: cmd}), {qos:0});
+    addLog('info', '已发送指令: ' + cmd);
+  }
+  document.getElementById('stopBtn').onclick = function(){ publishCmd('stop'); };
+  document.getElementById('exitBtn').onclick = function(){ publishCmd('exit'); };
+
+  // ===== 退出登录 =====
+  document.getElementById('logoutBtn').onclick = function(){
+    try{ client.end(true); }catch(e){}
+    client = null; loggedIn = false;
+    monitorView.classList.add('hidden');
+    loginView.classList.remove('hidden');
+    loginError.textContent = '';
+    document.getElementById('loginPwd').value = '';
+    loginBtn.disabled = false;
+    logBox.innerHTML = '<div class="log-line log-info"><span class="t">--</span>等待日志推送...</div>';
   };
-
-  stopBtn.onclick = function(){ publishCmd('stop'); };
-  exitBtn.onclick = function(){ publishCmd('exit'); };
 
 })();
 </script>
