@@ -36,7 +36,7 @@ input[type=text]:focus, input[type=password]:focus { border-color:#4A90D9; }
 .tip { font-size:12px; color:#999; margin-top:6px; text-align:center; }
 .error-text { color:#e74c3c; font-size:13px; text-align:center; margin-top:8px; min-height:18px; }
 .hidden { display:none; }
-/* 登录框布局：输入框为满宽八分之一并居中，按钮十分之一居中 */
+/* 电脑端登录框布局：输入框为满宽八分之一并居中，按钮十分之一居中 */
 #loginView .label { text-align:center; }
 #loginView input[type=text], #loginView input[type=password] {
   display:block; width:12.5%; margin:0 auto; text-align:left;
@@ -44,6 +44,15 @@ input[type=text]:focus, input[type=password]:focus { border-color:#4A90D9; }
 #loginView #loginBtn {
   display:block; width:10%; margin:10px auto 0; padding:8px 6px;
   font-size:14px; white-space:nowrap;
+}
+/* ===== 手机端独立UI（≤768px 视为移动设备）===== */
+@media (max-width: 768px) {
+  #loginView input[type=text], #loginView input[type=password] {
+    width:100%; /* 手机端输入框满宽 */
+  }
+  #loginView #loginBtn {
+    width:20%; /* 手机端登录按钮为电脑端10%的两倍宽 */
+  }
 }
 </style>
 </head>
