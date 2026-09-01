@@ -36,6 +36,23 @@ input[type=text]:focus, input[type=password]:focus { border-color:#4A90D9; }
 .tip { font-size:12px; color:#999; margin-top:6px; text-align:center; }
 .error-text { color:#e74c3c; font-size:13px; text-align:center; margin-top:8px; min-height:18px; }
 .hidden { display:none; }
+/* 记住密码/记住设备复选框行 */
+.check-row { text-align:center; margin:10px auto 0; }
+.check-row label { font-size:13px; color:#555; margin:0 12px; cursor:pointer; display:inline-block; }
+.check-row input { vertical-align:middle; margin-right:4px; }
+/* 账户菜单 */
+.menu-item { display:block; width:100%; padding:10px 14px; border:none; background:none; text-align:left; font-size:14px; cursor:pointer; color:#222; }
+.menu-item:hover { background:#f0f4f8; }
+.menu-item.danger { color:#e74c3c; }
+/* 遮罩 + 弹窗 */
+.overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.4); z-index:90; }
+.modal { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border-radius:12px; padding:20px; z-index:100; width:300px; }
+.modal h3 { font-size:16px; margin-bottom:12px; text-align:center; }
+.modal .field { margin-bottom:10px; }
+.modal .field input { width:100%; }
+.modal-err { color:#e74c3c; font-size:12px; min-height:16px; text-align:center; margin-top:6px; }
+.modal-btn-group { display:flex; gap:8px; margin-top:12px; }
+.modal-btn-group .btn { flex:1; }
 /* 电脑端登录框布局：输入框为满宽八分之一并居中，按钮十分之一居中 */
 #loginView .label { text-align:center; }
 #loginView input[type=text], #loginView input[type=password] {
@@ -70,6 +87,10 @@ input[type=text]:focus, input[type=password]:focus { border-color:#4A90D9; }
     <input type="text" id="loginId" placeholder="输入已注册的账户ID">
     <div class="label">密码</div>
     <input type="password" id="loginPwd" placeholder="输入账户密码">
+    <div class="check-row">
+      <label><input type="checkbox" id="rememberPwd"> 记住密码</label>
+      <label><input type="checkbox" id="rememberDevice"> 记住设备</label>
+    </div>
     <div class="error-text" id="loginError"></div>
     <button class="btn btn-primary" id="loginBtn" style="margin-top:10px;">登录</button>
     <div class="tip">使用脚本"账户"页面注册的ID和密码登录</div>
@@ -83,6 +104,7 @@ input[type=text]:focus, input[type=password]:focus { border-color:#4A90D9; }
       <span class="dot" id="statusDot"></span>
       <span id="statusText">连接中...</span>
       <span style="flex:1"></span>
+      <button class="btn" id="accountBtn" style="padding:6px 10px; font-size:12px; background:#4A90D9;">账户</button>
       <button class="btn btn-danger" id="logoutBtn" style="padding:6px 10px; font-size:12px;">退出登录</button>
     </div>
   </div>
@@ -101,6 +123,11 @@ input[type=text]:focus, input[type=password]:focus { border-color:#4A90D9; }
       <button class="btn btn-warn" id="exitBtn">退出游戏</button>
     </div>
   </div>
+</div>
+
+<!-- 账户菜单 -->
+<div id="accountMenu" class="hidden" style="position:fixed; top:56px; right:16px; background:#fff; border:1px solid #ddd; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,.12); z-index:100; min-width:140px;">
+  <button class="menu-item danger" id="menuLogoutBtn">退出登录</button>
 </div>
 
 <div class="footer">SCUM远程监控 · 数据经MQTT公网中转，无需内网穿透</div>
@@ -259,6 +286,17 @@ input[type=text]:focus, input[type=password]:focus { border-color:#4A90D9; }
   }
 
   function loginSuccess(id, pwd){
+    // 保存记住密码/记住设备状态
+    if(document.getElementById('rememberPwd').checked){
+      localStorage.setItem('scum_rp', JSON.stringify({id:id, pwd:pwd}));
+    } else {
+      localStorage.removeItem('scum_rp');
+    }
+    if(document.getElementById('rememberDevice').checked){
+      localStorage.setItem('scum_rd', JSON.stringify({id:id, pwd:pwd}));
+    } else {
+      localStorage.removeItem('scum_rd');
+    }
     // 计算tag并订阅日志主题
     sha256(pwd).then(function(pwHash){
       currentTag = pwHash.substring(0, 10);
@@ -275,6 +313,38 @@ input[type=text]:focus, input[type=password]:focus { border-color:#4A90D9; }
     });
   }
 
+  // ===== 页面加载：填充记住的账号密码 + 自动登录（记住设备）=====
+  function initLogin(){
+    try{
+      var rp = JSON.parse(localStorage.getItem('scum_rp')||'null');
+      if(rp && rp.id){
+        document.getElementById('loginId').value = rp.id;
+        if(rp.pwd) document.getElementById('loginPwd').value = rp.pwd;
+        document.getElementById('rememberPwd').checked = true;
+      }
+    }catch(e){}
+    try{
+      var rd = JSON.parse(localStorage.getItem('scum_rd')||'null');
+      if(rd && rd.id && rd.pwd){
+        document.getElementById('rememberDevice').checked = true;
+        loginBtn.disabled = true;
+        loginError.textContent = '自动登录中...';
+        loginError.style.color = '#f39c12';
+        doLogin(rd.id, rd.pwd);
+      }
+    }catch(e){}
+  }
+  initLogin();
+
+  // ===== 账号输入框变动时，若与记住的账号不一致则清除密码 =====
+  document.getElementById('loginId').addEventListener('input', function(){
+    var rp = null;
+    try{ rp = JSON.parse(localStorage.getItem('scum_rp')||'null'); }catch(e){}
+    if(rp && rp.id && this.value.trim() !== rp.id){
+      document.getElementById('loginPwd').value = '';
+    }
+  });
+
   // ===== 控制指令 =====
   function publishCmd(cmd){
     if(!loggedIn || !client) return;
@@ -285,16 +355,43 @@ input[type=text]:focus, input[type=password]:focus { border-color:#4A90D9; }
   document.getElementById('exitBtn').onclick = function(){ publishCmd('exit'); };
 
   // ===== 退出登录 =====
-  document.getElementById('logoutBtn').onclick = function(){
+  function doLogout(){
     try{ client.end(true); }catch(e){}
     client = null; loggedIn = false;
     monitorView.classList.add('hidden');
     loginView.classList.remove('hidden');
     loginError.textContent = '';
-    document.getElementById('loginPwd').value = '';
+    // 记住密码则保留账号密码（保持在输入框）；否则清空密码
+    var rp = null;
+    try{ rp = JSON.parse(localStorage.getItem('scum_rp')||'null'); }catch(e){}
+    if(rp && rp.id && document.getElementById('loginId').value.trim() === rp.id && rp.pwd){
+      document.getElementById('loginPwd').value = rp.pwd;
+      document.getElementById('rememberPwd').checked = true;
+    } else {
+      document.getElementById('loginPwd').value = '';
+    }
+    // 记住设备则保持自动登录勾选
+    var rd = null;
+    try{ rd = JSON.parse(localStorage.getItem('scum_rd')||'null'); }catch(e){}
+    document.getElementById('rememberDevice').checked = !!(rd && rd.id);
     loginBtn.disabled = false;
     logBox.innerHTML = '<div class="log-line log-info"><span class="t">--</span>等待日志推送...</div>';
+    document.getElementById('accountMenu').classList.add('hidden');
+  }
+  document.getElementById('logoutBtn').onclick = doLogout;
+
+  // ===== 账户菜单 =====
+  var accountBtn = document.getElementById('accountBtn');
+  var accountMenu = document.getElementById('accountMenu');
+  accountBtn.onclick = function(){
+    accountMenu.classList.toggle('hidden');
   };
+  document.addEventListener('click', function(e){
+    if(!accountMenu.classList.contains('hidden') && !accountMenu.contains(e.target) && e.target !== accountBtn){
+      accountMenu.classList.add('hidden');
+    }
+  });
+  document.getElementById('menuLogoutBtn').onclick = doLogout;
 
 })();
 </script>
