@@ -104,7 +104,6 @@ input[type=text]:focus, input[type=password]:focus { border-color:#4A90D9; }
       <span class="dot" id="statusDot"></span>
       <span id="statusText">连接中...</span>
       <span style="flex:1"></span>
-      <button class="btn" id="accountBtn" style="padding:6px 10px; font-size:12px; background:#4A90D9;">账户</button>
       <button class="btn btn-danger" id="logoutBtn" style="padding:6px 10px; font-size:12px;">退出登录</button>
     </div>
   </div>
@@ -123,11 +122,6 @@ input[type=text]:focus, input[type=password]:focus { border-color:#4A90D9; }
       <button class="btn btn-warn" id="exitBtn">退出游戏</button>
     </div>
   </div>
-</div>
-
-<!-- 账户菜单 -->
-<div id="accountMenu" class="hidden" style="position:fixed; top:56px; right:16px; background:#fff; border:1px solid #ddd; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,.12); z-index:100; min-width:140px;">
-  <button class="menu-item danger" id="menuLogoutBtn">退出登录</button>
 </div>
 
 <div class="footer">SCUM远程监控 · 数据经MQTT公网中转，无需内网穿透</div>
@@ -376,22 +370,8 @@ input[type=text]:focus, input[type=password]:focus { border-color:#4A90D9; }
     document.getElementById('rememberDevice').checked = !!(rd && rd.id);
     loginBtn.disabled = false;
     logBox.innerHTML = '<div class="log-line log-info"><span class="t">--</span>等待日志推送...</div>';
-    document.getElementById('accountMenu').classList.add('hidden');
   }
   document.getElementById('logoutBtn').onclick = doLogout;
-
-  // ===== 账户菜单 =====
-  var accountBtn = document.getElementById('accountBtn');
-  var accountMenu = document.getElementById('accountMenu');
-  accountBtn.onclick = function(){
-    accountMenu.classList.toggle('hidden');
-  };
-  document.addEventListener('click', function(e){
-    if(!accountMenu.classList.contains('hidden') && !accountMenu.contains(e.target) && e.target !== accountBtn){
-      accountMenu.classList.add('hidden');
-    }
-  });
-  document.getElementById('menuLogoutBtn').onclick = doLogout;
 
 })();
 </script>
